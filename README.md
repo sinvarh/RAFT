@@ -1,2 +1,1 @@
-# RAFT
-RAFT根据论文实现
+RAFT实现
