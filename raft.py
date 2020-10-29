@@ -1,5 +1,3 @@
-import collections
-
 
 class raft:
     def __init__(self):
@@ -40,10 +38,16 @@ class raft:
                 if(len(self.log)<index+1):
                     self.log.append(entry)
 
+            if(leader_commit>self.commit_index):
+                self.commit_index= min(leader_commit,len(self.log)-1)
 
 
     def request_vote_rpc(self,term, candidate_id,last_log_index,last_log_term):
-        return
-
-
+        if term<self.current_term:
+            return False
+        #
+        if(self.voted_for==None or self.voted_for == candidate_id):
+            if(last_log_index >= self.commit_index and last_log_term>=self.log[self.commit_index][0]):
+                return True
+        return False
 
