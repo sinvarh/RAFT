@@ -1,3 +1,29 @@
+from multiprocessing import Process
+
+
+class State:
+    # 定义state基类
+    def timeout_2_start_election(self):
+        pass
+    def timeout_2_new_election(self):
+        pass
+    def receive_votes_from_majority_servers(self):
+        pass
+    def discovers_current_leader_or_new_term(self):
+        pass
+    def discovers_server_with_higher_term(self):
+        pass
+
+class FollowerState(State):
+    def __init__(self,raft_machine):
+        self.raft_machine = raft_machine
+
+class CandidateState(State):
+    def __init__(self, raft_machine):
+        self.raft_machine = raft_machine
+class LeaderState(State):
+    def __init__(self, raft_machine):
+        self.raft_machine = raft_machine
 
 class raft:
     def __init__(self):
@@ -10,6 +36,16 @@ class raft:
 
         self.next_index = ()
         self.match_index =  ()
+
+        #状态
+        self.follower_state = FollowerState(self)
+        self.candidate_state = CandidateState(self)
+        self.leader_state = LeaderState(self)
+
+        #初始状态
+        if self.current_term==0:
+            self.state = self.follower_state
+
 
 
 
@@ -40,6 +76,8 @@ class raft:
 
             if(leader_commit>self.commit_index):
                 self.commit_index= min(leader_commit,len(self.log)-1)
+        if(term > self.current_term):
+            self.current_term = term
 
 
     def request_vote_rpc(self,term, candidate_id,last_log_index,last_log_term):
@@ -51,3 +89,16 @@ class raft:
                 return True
         return False
 
+    
+
+#把log[lastApplied]应用到状态机中
+def status_change(name):
+    import time
+    # time.sleep(5)
+    print('hello', name)
+if __name__ == '__main__':
+    p = Process(target=f, args=('bob',))
+    p.start()
+
+    print("end")
+    p.join()
