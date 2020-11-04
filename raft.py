@@ -25,7 +25,7 @@ class LeaderState(State):
     def __init__(self, raft_machine):
         self.raft_machine = raft_machine
 
-class raft:
+class Raft:
     def __init__(self):
         self.current_term = 0
         self.voted_for =None
@@ -78,6 +78,7 @@ class raft:
                 self.commit_index= min(leader_commit,len(self.log)-1)
         if(term > self.current_term):
             self.current_term = term
+            self.state = self.follower_state
 
 
     def request_vote_rpc(self,term, candidate_id,last_log_index,last_log_term):
@@ -92,10 +93,10 @@ class raft:
     
 
 #把log[lastApplied]应用到状态机中
-def status_change(name):
-    import time
-    # time.sleep(5)
-    print('hello', name)
+timout = 30
+def waite_rpc(raft):
+
+
 if __name__ == '__main__':
     p = Process(target=f, args=('bob',))
     p.start()
