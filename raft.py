@@ -1,4 +1,5 @@
 from multiprocessing import Process
+import time
 
 
 def request_rpc(rpc_func):
@@ -7,11 +8,15 @@ def request_rpc(rpc_func):
         if term > self.current_term:
             self.current_term = term
             self.state = self.follower_state
+
     return wrapper
 
 
 class State:
     # 定义state基类
+    def starts_up(self):
+        pass
+
     def timeout_2_start_election(self):
         pass
 
@@ -20,7 +25,7 @@ class State:
 
     def receive_votes_from_majority_servers(self):
         pass
-
+t
     def discovers_current_leader_or_new_term(self):
         pass
 
@@ -29,18 +34,41 @@ class State:
 
 
 class FollowerState(State):
+    #下面3种情况会变成follower
     def __init__(self, raft_machine):
         self.raft_machine = raft_machine
 
+    def starts_up(self):
+        #接受rpc请求
+        pass
+
+    def discovers_current_leader_or_new_term(self):
+        #
+        pass
+
+    def  discovers_server_with_higher_term(self):
+        pass
 
 class CandidateState(State):
+    # 下面2种情况会变成follower
     def __init__(self, raft_machine):
         self.raft_machine = raft_machine
+
+    def timeout_2_start_election(self):
+        pass
+
+    def timeout_2_new_election(self):
+        pass
+
 
 
 class LeaderState(State):
+    # 下面2种情况会变成leader
     def __init__(self, raft_machine):
         self.raft_machine = raft_machine
+
+    def receive_votes_from_majority_servers(self):
+        pass
 
 
 class Raft:
@@ -64,8 +92,12 @@ class Raft:
         if self.current_term == 0:
             self.state = self.follower_state
 
+        # 自己加的状态
+        self.last_rpc_time = int(time.time())
+
     @request_rpc
     def append_entries_rpc(self, term, leader_id, prev_log_index, prev_log_term, entries, leader_commit):
+
         # 参考论文5.1，5.3
         if (term < self.current_term):
             return False
@@ -93,6 +125,10 @@ class Raft:
             if (leader_commit > self.commit_index):
                 self.commit_index = min(leader_commit, len(self.log) - 1)
 
+        # 更新心跳
+        if (term == self.current_term):
+            self.last_rpc_time = int(time.time())
+
     @request_rpc
     def request_vote_rpc(self, term, candidate_id, last_log_index, last_log_term):
         if term < self.current_term:
@@ -100,15 +136,46 @@ class Raft:
         #
         if (self.voted_for == None or self.voted_for == candidate_id):
             if (last_log_index >= self.commit_index and last_log_term >= self.log[self.commit_index][0]):
+                # 给某个候选人投了票，就自己变成候选人
+                self.state = self.candidate_state
                 return True
         return False
 
+    def starts_up(self):
+        pass
 
-# 把log[lastApplied]应用到状态机中
-timout = 30
+    def timeout_2_start_election(self):
+        pass
+
+    def timeout_2_new_election(self):
+        pass
+
+    def receive_votes_from_majority_servers(self):
+        pass
+
+    def discovers_current_leader_or_new_term(self):
+        pass
+
+    def discovers_server_with_higher_term(self):
+        pass
+
+# 如果commitIndex > lastApplied，那么就 lastApplied 加一，并把log[lastApplied]应用到状态机中
+# 有个后台进程把log[lastApplied]应用到状态机中,这里简单把记录改下，实际上应该像mysql binlog一样
+def status_machine_apply(raft):
+    while (True):
+        if raft.commit_index > raft.last_applied:
+            raft.last_applied += 1
+
+
+timeout = 30
 
 
 def waite_rpc(raft):
+    while (True):
+        if (raft.state == raft.follower_state):
+            is_timeout = (int(time.time()) - raft.last_rpc_time) > timeout
+            if (is_timeout):
+                raft.state = raft.candidate_state
 
 
 if __name__ == '__main__':
