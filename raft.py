@@ -1,5 +1,6 @@
 from multiprocessing import Process
 import time
+import zerorpc
 
 
 def request_rpc(rpc_func):
@@ -25,7 +26,7 @@ class State:
 
     def receive_votes_from_majority_servers(self):
         pass
-t
+
     def discovers_current_leader_or_new_term(self):
         pass
 
@@ -37,10 +38,21 @@ class FollowerState(State):
     #下面3种情况会变成follower
     def __init__(self, raft_machine):
         self.raft_machine = raft_machine
-
+        #设置超时为30s
+        self.timeout = 30
+    def waite_rpc(self):
+        while (True):
+            if (self.raft_machine .state == self.raft_machine.follower_state):
+                is_timeout = (int(time.time()) - self.raft_machine.last_rpc_time) > self.timeout
+                if (is_timeout):
+                    self.raft_machine.state = self.raft_machine.candidate_state
     def starts_up(self):
-        #接受rpc请求
-        pass
+        #接受rpc请求,启动时都会接受rpc请求
+
+        #启动超时计算
+        p = Process(target=self.waite_rpc(), args=(self,))
+        p.start()
+        p.join()
 
     def discovers_current_leader_or_new_term(self):
         #
@@ -59,6 +71,9 @@ class CandidateState(State):
 
     def timeout_2_new_election(self):
         pass
+
+
+
 
 
 
@@ -167,15 +182,7 @@ def status_machine_apply(raft):
             raft.last_applied += 1
 
 
-timeout = 30
 
-
-def waite_rpc(raft):
-    while (True):
-        if (raft.state == raft.follower_state):
-            is_timeout = (int(time.time()) - raft.last_rpc_time) > timeout
-            if (is_timeout):
-                raft.state = raft.candidate_state
 
 
 if __name__ == '__main__':
